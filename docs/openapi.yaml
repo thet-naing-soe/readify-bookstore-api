@@ -1,0 +1,590 @@
+openapi: "3.0.3"
+
+info:
+  title: Readify Bookstore API
+  version: "1.0.0"
+  description: |
+    ## Readify Ltd. Online Bookstore API
+
+    RESTful API for managing books and authors.
+
+    ### Design Principles
+    - **Resource-based URLs**: `/books`, `/authors`
+    - **HTTP Verbs**: GET, POST, PUT, PATCH, DELETE
+    - **Consistent Response Structure**: `{ success, data, error }`
+    - **Versioning**: `/api/v1/` prefix
+
+    ### Error Codes
+    |------|-------------|-------------|
+    | VALIDATION_ERROR | 400 | Invalid input data |
+    | NOT_FOUND | 404 | Resource not found |
+    | CONFLICT | 409 | Duplicate resource |
+    | INTERNAL_SERVER_ERROR | 500 | Server error |
+
+  contact:
+    name: Readify Engineering Team
+    email: api@readify.com
+
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Development Server
+  - url: https://staging.readify.com/api/v1
+    description: Staging Server
+
+tags:
+  - name: Books
+    description: Book management endpoints
+  - name: Authors
+    description: Author management endpoints
+  - name: Health
+    description: API health monitoring
+
+# Reusable Components
+components:
+  schemas:
+    # Book Schema
+    Book:
+      type: object
+      required:
+        - title
+        - authorId
+        - isbn
+        - price
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440000"
+          description: Auto-generated unique identifier
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Clean Code"
+          description: Book title
+        authorId:
+          type: string
+          example: "1"
+          description: Reference to Author ID
+        isbn:
+          type: string
+          pattern: "^97[89][0-9]{10}$"
+          example: "9780132350884"
+          description: ISBN-13 format
+        genre:
+          type: string
+          enum:
+            [
+              Fiction,
+              Non-Fiction,
+              Technology,
+              Science,
+              History,
+              Biography,
+              General,
+            ]
+          default: General
+          example: "Technology"
+        publishedYear:
+          type: integer
+          minimum: 1000
+          maximum: 2100
+          example: 2008
+          nullable: true
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 35.00
+          description: Price in USD
+        stock:
+          type: integer
+          minimum: 0
+          default: 0
+          example: 30
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # Author Schema
+    Author:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          readOnly: true
+          example: "1"
+        name:
+          type: string
+          example: "Robert C. Martin"
+        nationality:
+          type: string
+          example: "American"
+        birthYear:
+          type: integer
+          example: 1952
+          nullable: true
+        bio:
+          type: string
+          example: "Software engineer known as Uncle Bob"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # Standard Success Response
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+
+    # Standard Error Response
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "NOT_FOUND"
+            message:
+              type: string
+              example: "Book with id 999 not found"
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/api/v1/books/999"
+
+    # Pagination
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalPages:
+          type: integer
+          example: 10
+
+  # Reusable Parameters
+  parameters:
+    bookId:
+      name: id
+      in: path
+      required: true
+      description: Unique Book ID
+      schema:
+        type: string
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    authorId:
+      name: id
+      in: path
+      required: true
+      description: Unique Author ID
+      schema:
+        type: string
+
+    pageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    limitParam:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+  # Reusable Responses
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: NOT_FOUND
+              message: "Book with id '999' not found"
+            timestamp: "2024-01-15T10:30:00Z"
+            path: "/api/v1/books/999"
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error:
+              code: VALIDATION_ERROR
+              message: "title is required; price must be a non-negative number"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+# Endpoints Definition
+paths:
+  # ---- BOOKS ----
+  /books:
+    get:
+      tags: [Books]
+      summary: List all books
+      description: |
+        Retrieve a paginated list of all books.
+        Supports filtering by **genre** and **authorId**.
+
+        **Usage Example:**
+        ````
+        GET /api/v1/books?genre=Technology&page=1&limit=5
+        ````
+      operationId: getAllBooks
+      parameters:
+        - $ref: "#/components/parameters/pageParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: genre
+          in: query
+          description: Filter by book genre
+          schema:
+            type: string
+            enum:
+              [
+                Fiction,
+                Non-Fiction,
+                Technology,
+                Science,
+                History,
+                Biography,
+                General,
+              ]
+        - name: authorId
+          in: query
+          description: Filter by author ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved books list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Book"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+              example:
+                success: true
+                data:
+                  - id: "1"
+                    title: "Clean Code"
+                    authorId: "2"
+                    isbn: "9780132350884"
+                    genre: "Technology"
+                    publishedYear: 2008
+                    price: 35.00
+                    stock: 30
+                pagination:
+                  total: 2
+                  page: 1
+                  limit: 10
+                  totalPages: 1
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      tags: [Books]
+      summary: Create a new book
+      description: |
+        Add a new book to the bookstore inventory.
+
+        **Required Fields:** `title`, `authorId`, `isbn`, `price`
+
+        **Note:** ISBN must be unique across all books.
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Book"
+            examples:
+              technology_book:
+                summary: Technology book example
+                value:
+                  title: "The Pragmatic Programmer"
+                  authorId: "2"
+                  isbn: "9780135957059"
+                  genre: "Technology"
+                  publishedYear: 2019
+                  price: 49.95
+                  stock: 25
+              fiction_book:
+                summary: Fiction book example
+                value:
+                  title: "1984"
+                  authorId: "1"
+                  isbn: "9780451524935"
+                  genre: "Fiction"
+                  publishedYear: 1949
+                  price: 14.99
+                  stock: 100
+      responses:
+        "201":
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: Author not found
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Book with this ISBN already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: CONFLICT
+                  message: "Book with ISBN '9780132350884' already exists"
+
+  /books/{id}:
+    get:
+      tags: [Books]
+      summary: Get book by ID
+      description: Retrieve a specific book by its unique ID, including author details.
+      operationId: getBookById
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      responses:
+        "200":
+          description: Book found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Book"
+                      - type: object
+                        properties:
+                          author:
+                            $ref: "#/components/schemas/Author"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [Books]
+      summary: Replace book (full update)
+      description: |
+        **Full replacement** of book resource. All required fields must be provided.
+
+        **Difference from PATCH:**
+        - PUT replaces the entire resource
+        - PATCH updates only specified fields
+      operationId: updateBook
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Book"
+      responses:
+        "200":
+          description: Book updated successfully
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Books]
+      summary: Partial update book
+      description: Update specific fields of a book without replacing the entire resource.
+      operationId: patchBook
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                title:
+                  type: string
+                price:
+                  type: number
+                stock:
+                  type: integer
+                genre:
+                  type: string
+            example:
+              price: 29.99
+              stock: 45
+      responses:
+        "200":
+          description: Book partially updated
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Books]
+      summary: Delete a book
+      description: |
+        Permanently remove a book from the system.
+
+        **Note:** Returns `204 No Content` on success (no response body).
+      operationId: deleteBook
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      responses:
+        "204":
+          description: Book deleted successfully (no content)
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---- AUTHORS ----
+  /authors:
+    get:
+      tags: [Authors]
+      summary: List all authors
+      operationId: getAllAuthors
+      responses:
+        "200":
+          description: Authors list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Author"
+                  total:
+                    type: integer
+
+    post:
+      tags: [Authors]
+      summary: Create a new author
+      operationId: createAuthor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Author"
+            example:
+              name: "George Orwell"
+              nationality: "British"
+              birthYear: 1903
+              bio: "English novelist and essayist"
+      responses:
+        "201":
+          description: Author created successfully
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /authors/{id}:
+    get:
+      tags: [Authors]
+      summary: Get author with their books
+      operationId: getAuthorById
+      parameters:
+        - $ref: "#/components/parameters/authorId"
+      responses:
+        "200":
+          description: Author found with books
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---- HEALTH ----
+  /health:
+    get:
+      tags: [Health]
+      summary: API health check
+      description: Returns API uptime status for monitoring tools.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              example:
+                status: healthy
+                service: Readify Bookstore API
+                version: "1.0.0"
+                uptime: "3600 seconds"
+                timestamp: "2024-01-15T10:30:00Z"
