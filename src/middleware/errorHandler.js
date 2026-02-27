@@ -10,14 +10,15 @@ const errorHandler = (err, req, res, next) => {
     ip: req.ip,
     timestamp: new Date().toISOString(),
   });
+
   const statusCode = err.statusCode || 500;
 
   res.status(statusCode).json({
     success: false,
     error: {
       code: err.code || "INTERNAL_SERVER_ERROR",
-      message: err.message || "An expected error occurred",
-      ...(env.process.NODE_ENV === "development" && { stack: err.stack }),
+      message: err.message || "An unexpected error occurred",
+      ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
     },
     timestamp: new Date().toISOString(),
     path: req.url,

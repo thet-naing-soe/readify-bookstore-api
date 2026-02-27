@@ -48,9 +48,10 @@ app.get("/health", (req, res) => {
 });
 
 // API Routes
-const API_PREFIX = "/api/v1";
-app.use(`${API_PREFIX}/books`, bookRoutes);
-app.use(`${API_PREFIX}/authors`, authorRoutes);
+const API_PREFIX = process.env.API_PREFIX || "api";
+const API_VERSION = process.env.API_VERSION || "v1";
+app.use(`/${API_PREFIX}/${API_VERSION}/books`, bookRoutes);
+app.use(`/${API_PREFIX}/${API_VERSION}/authors`, authorRoutes);
 
 // 404 Handler
 app.use((req, res) => {

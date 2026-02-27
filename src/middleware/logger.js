@@ -1,11 +1,10 @@
-const { version } = require("react");
 const winston = require("winston");
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: winston.format.combine(
     winston.format.timestamp({
-      format: "YYYY-MM-DD HH-mm-ss",
+      format: "YYYY-MM-DD HH:mm:ss",
     }),
     winston.format.errors({
       stack: true,
@@ -14,25 +13,25 @@ const logger = winston.createLogger({
   ),
   defaultMeta: {
     service: "readify-bookstore-api",
-    version: env.npm_package_version,
-    environment: process.env.NODE_ENV,
+    version: process.env.npm_package_version,
+    environment: process.env.NODE_ENV || "development",
   },
   transports: [
-    new wiston.transports.Console({
-      format: wiston.format.combine(
+    new winston.transports.Console({
+      format: winston.format.combine(
         winston.format.colorize(),
-        wiston.format.simple(),
+        winston.format.simple(),
       ),
       silent: process.env.NODE_ENV === "production",
     }),
-    new wiston.transports.File({
+    new winston.transports.File({
       filename: "logs/error.log",
       level: "error",
       maxsize: 20971520,
       maxFiles: 14,
     }),
     new winston.transports.File({
-      filename: "logs/conbined.log",
+      filename: "logs/combined.log",
       maxsize: 20971520,
       maxFiles: 30,
     }),
@@ -41,12 +40,12 @@ const logger = winston.createLogger({
 
 if (process.env.NODE_ENV !== "production") {
   logger.exceptions.handle(
-    new wiston.transports.File({
+    new winston.transports.File({
       filename: "logs/exceptions.log",
     }),
   );
   logger.rejections.handle(
-    new wiston.transports.File({
+    new winston.transports.File({
       filename: "logs/rejections.log",
     }),
   );

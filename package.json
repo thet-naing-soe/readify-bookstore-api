@@ -1,20 +1,21 @@
 {
   "name": "readify-bookstore-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Readify Bookstore RESTful API",
+  "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thet-naing-soe/readify-bookstore-api.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Thet Naing Soe",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/thet-naing-soe/readify-bookstore-api/issues"
