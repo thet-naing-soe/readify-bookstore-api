@@ -1,0 +1,19 @@
+{
+  "id": "cmm4tpjhe02b9gr1laohbn8gb",
+  "v": 2,
+  "name": "Readify Local",
+  "variables": [
+    {
+      "key": "createdBookId",
+      "secret": false,
+      "initialValue": "",
+      "currentValue": "71fd45e5-cf9f-4a1e-9048-64116c355142"
+    },
+    {
+      "key": "baseUrl",
+      "secret": false,
+      "initialValue": "localhost:3000",
+      "currentValue": ""
+    }
+  ]
+}

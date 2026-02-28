@@ -1,0 +1,361 @@
+{
+  "v": 11,
+  "id": "cmm4tkxk102aagr1ltmcpj1dv",
+  "name": "Readify Bookstore API Tests",
+  "folders": [
+    {
+      "v": 11,
+      "id": "cmm4tkxkb02abgr1lqk0c644x",
+      "name": "Books - CRUD Flow",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "All Books",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/api/v1/books",
+          "params": [
+            {
+              "key": "page",
+              "value": "1",
+              "active": true,
+              "description": ""
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Response has success field', () => {\n  const json = pw.response.body;\n  pw.expect(json.success).toBe(true);\n  pw.expect(Array.isArray(json.data)).toBe(true);       \n  pw.expect(typeof json.pagination).toBe('object');     \n});\n\npw.test('Pagination structure correct', () => {\n  const pagination = pw.response.body.pagination;\n  pw.expect(pagination.page !== undefined).toBe(true);\n  pw.expect(pagination.limit !== undefined).toBe(true);\n  pw.expect(pagination.total !== undefined).toBe(true);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Create Book",
+          "method": "POST",
+          "endpoint": "http://<<baseUrl>>/api/v1/books",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 201', () => {\n  pw.expect(pw.response.status).toBe(201);\n});\n\npw.test('Book ID saved to environment', () => {\n  const json = pw.response.body;\n  pw.expect(json.data.id !== undefined).toBe(true);\n  pw.env.set('createdBookId', String(json.data.id));\n});\n\npw.test('Book data is correct', () => {\n  const book = pw.response.body.data;\n  pw.expect(book.title).toBeType('string');\n  pw.expect(book.title.length > 0).toBe(true);\n  pw.expect(book.price).toBeType('number');\n  pw.expect(book.price > 0).toBe(true);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"title\": \"Robot\",\n  \"authorId\": \"2\",\n  \"isbn\": \"9781254037101\",\n  \"genre\": \"Technology\",\n  \"publishedYear\": 2024,\n  \"price\": 29.99,\n  \"stock\": 10\n}"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": " Book by ID",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/api/v1/books/<<createdBookId>>",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Correct book returned', () => {\n  const json = pw.response.body;\n  pw.expect(json.data.id !== undefined).toBe(true);\n  pw.expect(json.data.author !== undefined).toBe(true);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Update Book",
+          "method": "PUT",
+          "endpoint": "http://<<baseUrl>>/api/v1/books/<<createdBookId>>",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Title updated correctly', () => {\n  pw.expect(pw.response.body.data.title).toBe('Updated Test Book');\n});\n\npw.test('Price updated correctly', () => {\n  pw.expect(pw.response.body.data.price).toBe(39.99);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"title\": \"Updated Test Book\",\n  \"authorId\": \"1\",\n  \"isbn\": \"9781234567890\",\n  \"genre\": \"Fiction\",\n  \"publishedYear\": 2024,\n  \"price\": 39.99,\n  \"stock\": 50\n}"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Partial Update",
+          "method": "PATCH",
+          "endpoint": "http://<<baseUrl>>/api/v1/books/<<createdBookId>>",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Only price changed', () => {\n  const book = pw.response.body.data;\n  pw.expect(book.price).toBe(19.99);\n  pw.expect(book.title).toBe('Updated Test Book');\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"price\": 19.99\n}"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "DELETE Book",
+          "method": "DELETE",
+          "endpoint": "http://<<baseUrl>>/api/v1/books/<<createdBookId>>",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 204', () => {\n  pw.expect(pw.response.status).toBe(204);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "GET Deleted Book",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/api/v1/books/<<createdBookId>>",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 404 after delete', () => {\n  pw.expect(pw.response.status).toBe(404);\n});\n\npw.test('Error response format correct', () => {\n  const json = pw.response.body;\n  pw.expect(json.success).toBe(false);\n  pw.expect(json.error !== undefined).toBe(true);\n  pw.expect(json.error.code).toBe('NOT_FOUND');\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null
+    },
+    {
+      "v": 11,
+      "id": "cmm4tkxlk02aqgr1l62v6cg8f",
+      "name": "Validation Error Tests",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "Missing Required Fields",
+          "method": "POST",
+          "endpoint": "http://<<baseUrl>>/api/v1/books",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 400', () => {\n  pw.expect(pw.response.status).toBe(400);\n});\n\npw.test('Validation error code correct', () => {\n  const error = pw.response.body.error;\n  pw.expect(error.code).toBe('VALIDATION_ERROR');\n  pw.expect(error.message).toInclude('title');\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{ \"genre\": \"Fiction\" }"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Invalid ISBN",
+          "method": "POST",
+          "endpoint": "http://<<baseUrl>>/api/v1/books",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status 400 for invalid ISBN', () => {\n  pw.expect(pw.response.status).toBe(400);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"title\": \"Rust\",\n  \"authorId\": \"2\",\n  \"isbn\": \"invalid-isbn\",\n  \"genre\": \"Technology\",\n  \"publishedYear\": 2024,\n  \"price\": 29.99,\n  \"stock\": 10\n}"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Negative Price",
+          "method": "POST",
+          "endpoint": "http://<<baseUrl>>/api/v1/books",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status 400 for negative price', () => {\n  pw.expect(pw.response.status).toBe(400);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"title\": \"Go\",\n  \"authorId\": \"2\",\n  \"isbn\": \"9781234567899\",\n  \"genre\": \"Technology\",\n  \"publishedYear\": 2024,\n  \"price\": -29.99,\n  \"stock\": 10\n}"
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null
+    },
+    {
+      "v": 11,
+      "id": "cmm4tkxma02axgr1l2yrgrkpc",
+      "name": "Authors Endpoints",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "All Authors",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/api/v1/authors",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n    pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Response has data array', () => {\n    const json = pw.response.body;\n    pw.expect(Array.isArray(json.data)).toBe(true);\n});\n\npw.test('Authors list is not empty', () => {\n    const json = pw.response.body;\n    pw.expect(json.data.length > 0).toBe(true);\n});\n\npw.test('Each author has required fields', () => {\n    const authors = pw.response.body.data;\n    authors.forEach(author => {\n        pw.expect(typeof author.id).toBe('string');\n        pw.expect(typeof author.name).toBe('string');\n        pw.expect(author.name.length > 0).toBe(true);\n    });\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Author with Books",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/api/v1/authors/1",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('Status is 200', () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test('Author data exists', () => {\n  const json = pw.response.body;\n  pw.expect(json.data !== undefined).toBe(true);\n  pw.expect(json.data !== null).toBe(true);\n});\n\npw.test('Author has correct fields', () => {\n  const author = pw.response.body.data;\n  pw.expect(typeof author.id).toBe('string');\n  pw.expect(typeof author.name).toBe('string');\n  pw.expect(author.name.length > 0).toBe(true);\n});\n\npw.test('Author has books array', () => {\n  const author = pw.response.body.data;\n  pw.expect(Array.isArray(author.books)).toBe(true);\n});\n\npw.test('Each book has required fields', () => {\n  const books = pw.response.body.data.books;\n  books.forEach(book => {\n    pw.expect(typeof book.id).toBe('string');\n    pw.expect(typeof book.title).toBe('string');\n    pw.expect(book.title.length > 0).toBe(true);\n    pw.expect(typeof book.price).toBe('number');\n    pw.expect(book.price > 0).toBe(true);\n  });\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null
+    },
+    {
+      "v": 11,
+      "id": "cmm4tkxmy02b2gr1lntjltxxw",
+      "name": "Health Check",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "Health Check",
+          "method": "GET",
+          "endpoint": "http://<<baseUrl>>/health",
+          "params": [],
+          "headers": [],
+          "preRequestScript": "",
+          "testScript": "pw.test('API is healthy', () => {\n  pw.expect(pw.response.status).toBe(200);\n  pw.expect(pw.response.body.status).toBe('healthy');\n  pw.expect(pw.response.body.uptime !== undefined).toBe(true);\n});",
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null
+    }
+  ],
+  "requests": [],
+  "auth": {
+    "authType": "inherit",
+    "authActive": true
+  },
+  "headers": [],
+  "variables": [],
+  "description": null
+}
