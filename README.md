@@ -36,7 +36,7 @@ npm run dev
 npm test
 ```
 
-For manual testing, import `tests/api-collections/bookstore.collection.json`
+For manual testing, import `tests/api-collections/readify_bookstore_api.json`
 into [Hoppscotch](https://hoppscotch.io).
 
 ## Architecture
